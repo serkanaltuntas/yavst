@@ -1,0 +1,7 @@
+[molecules]
+receptor = protein_file
+ligands = ligand_folder
+
+[gridbox]
+center = x y z
+box = x y z
