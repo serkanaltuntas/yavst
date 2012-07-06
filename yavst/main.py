@@ -9,15 +9,35 @@ PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def generate_gpf(ligand, receptor):
-    print "Creating", ligand[:-5]+'gpf'
-    subprocess.Popen(
-        ['python', '../prepare_gpf4.py',
-         '-l', ligand,
-         '-r', receptor.split('/')[-1],
-         '-p', 'npts=60,60,60',
-         '-o', ligand[:-5]+'gpf',],
-        stdout=subprocess.PIPE).communicate()[0]
-    return True
+    try:
+        print "Creating", ligand[:-5] + 'gpf'
+        subprocess.Popen(
+            ['python', '../prepare_gpf4.py',
+             '-l', ligand,
+             '-r', receptor.split('/')[-1],
+             '-p', 'npts=60,60,60',
+             '-o', ligand[:-5] + 'gpf', ],
+            stdout=subprocess.PIPE).communicate()[0]
+        return True
+    except:
+        return False
+
+
+def generate_dpf(ligand, receptor):
+    try:
+        print "Creating", ligand[:-5] + 'dpf'
+        subprocess.Popen(
+            ['python', '../prepare_dpf4.py',
+             '-l', ligand,
+             '-r', receptor.split('/')[-1],
+             '-p', 'ga_num_evals=20000000',
+             '-p', 'ga_pop_size=150',
+             '-p', 'ga_run=10',
+             '-o', ligand[:-5] + 'dpf', ],
+            stdout=subprocess.PIPE).communicate()[0]
+        return True
+    except:
+        return False
 
 
 def main():
@@ -36,8 +56,10 @@ def main():
     box = parser.get('gridbox', 'box')
 
     # Ligand path should include a slash at the end:
-    if ligands[-1] == '/': ligands_path = ligands
-    else: ligands_path = ligands + '/'
+    if ligands[-1] == '/':
+        ligands_path = ligands
+    else:
+        ligands_path = ligands + '/'
 
     # Ligand List:
     ligand_list = subprocess.Popen(
@@ -46,7 +68,8 @@ def main():
     ligand_list = ligand_list.split('\n')[:-1]  # Last item is empty!
 
     # Create griding and docking workspace:
-    subprocess.Popen(['mkdir', 'workspace'], stdout=subprocess.PIPE).communicate()[0]
+    subprocess.Popen(['mkdir', 'workspace'],
+                     stdout=subprocess.PIPE).communicate()[0]
 
     # Copy ligands and receptor into workspace
     subprocess.Popen(['cp -r %s/* workspace/' % ligands_path], shell=True)
@@ -57,15 +80,19 @@ def main():
         stdout=subprocess.PIPE).communicate()[0]
     print pwd
 
-    # Generate Grid Parameter Files for every ligand
-    gpf_list = []
+    gpf_list = []  # holds all gpf files in workspace
+    dpf_list = []  # holds all dpf files in workspace
+    qsub_list = []  # holds all qsub scripts in workspace
     for ligand in ligand_list:
+        # Generate Grid Parameter Files for every ligand
         gpf_file = generate_gpf(ligand, receptor)
         gpf_list.append(gpf_file)
-    # gpf_list holds all gpf files in workspace
 
-    # Generate Docking Parameter Files:
-    # Generate qsub scripts:
+        # Generate Docking Parameter Files:
+        dpf_file = generate_dpf(ligand, receptor)
+        dpf_list.append(dpf_file)
+
+        # Generate qsub scripts:
     # Run qsub scripts:
     print "Finished!"
 
