@@ -10,4 +10,4 @@ box = x y z
 autogrid = /opt/progs/Autodock4/i86Linux2/autogrid4
 autodock = /opt/progs/Autodock4/i86Linux2/autodock4
 qsub = True
-running = True
+run_qsub = True

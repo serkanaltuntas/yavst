@@ -8,24 +8,9 @@ import subprocess
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
-def generate_gpf(ligand, receptor):
-    try:
-        print "Creating", ligand[:-5] + 'gpf'
-        subprocess.Popen(
-            ['python', '../prepare_gpf4.py',
-             '-l', ligand,
-             '-r', receptor.split('/')[-1],
-             '-p', 'npts=60,60,60',
-             '-o', ligand[:-5] + 'gpf', ],
-            stdout=subprocess.PIPE).communicate()[0]
-        return True
-    except:
-        return False
-
-
 def generate_dpf(ligand, receptor):
     try:
-        print "Creating", ligand[:-5] + 'dpf'
+        print 'Creating', ligand[:-5] + 'dpf'
         subprocess.Popen(
             ['python', '../prepare_dpf4.py',
              '-l', ligand,
@@ -66,11 +51,11 @@ def main():
     else:
         raise IOError('Wrong qsub option! (True/False)')
         
-    running = parser.get('run', 'running')
-    if running == 'True':
-        running = True
-    elif running == 'False':
-        running = False
+    run_qsub = parser.get('run', 'run_qsub')
+    if run_qsub == 'True':
+        run_qsub = True
+    elif run_qsub == 'False':
+        run_qsub = False
     else:
         raise IOError('Wrong running option! (True/False)')
 
@@ -95,13 +80,10 @@ def main():
     subprocess.Popen(['cp -r %s workspace/' % receptor], shell=True)
     os.chdir('workspace')
 
+    print
     pwd = subprocess.Popen(['pwd'],
         stdout=subprocess.PIPE).communicate()[0]
-    print pwd
-
-    gpf_list = []  # holds all gpf files in workspace
-    dpf_list = []  # holds all dpf files in workspace
-    qsub_list = []  # holds all qsub scripts in workspace
+    print 'Working Directory:', pwd
 
     # If required read qsub template just ones:
     if qsub == True:
@@ -109,52 +91,77 @@ def main():
         qsub_template = qsub_template_file.readlines()
         qsub_template_file.close()
 
-    for ligand in ligand_list:
-        # Generate Grid Parameter Files for every ligand
-        gpf_file = generate_gpf(ligand, receptor)
-        gpf_list.append(gpf_file)
+    # Create Grid Maps for all ligands ones:
+    try:
+        print 'Creating Grid Parameter File'
+        print
+        receptor_name = receptor.split('/')[-1]
+        subprocess.Popen(
+            ['python', '../prepare_gpf4.py',
+             '-r', receptor_name,
+             '-p', 'npts=60,60,60',
+             '-d', '.', ],
+            stdout=subprocess.PIPE).communicate()[0]
 
-        # Generate Docking Parameter Files:
-        dpf_file = generate_dpf(ligand, receptor)
-        dpf_list.append(dpf_file)
-
-        # Generate running paths:
-        autogrid = '%s -p %s -l %s\n' % (
-            autogrid_path, ligand[:-5] + 'gpf', ligand[:-5] + 'glg'
+        autogrid_run = '%s -p %s -l %s\n\n' % (
+            autogrid_path,
+            receptor_name[:-5] + 'gpf',
+            receptor_name[:-5] + 'glg'
             )
-        autodock = '%s -p %s -l %s\n' % (
-            autodock_path, ligand[:-5] + 'dpf', ligand[:-5] + 'dlg'
-            )
-
 
         if qsub == True:
             # Generate qsub script:
-            print "Creating", ligand[:-5] + 'qsub'
-            qsub_content = qsub_template + [autogrid, autodock]
+            print 'Creating grid_generation.qsub'
+            qsub_content = qsub_template + [autogrid_run]
+            qsub_file = open('grid_generation.qsub', 'w')
+            qsub_file.writelines(qsub_content)
+            qsub_file.close()
+
+            # Run qsub scripts:
+            if run_qsub == True:
+                running = subprocess.Popen(['qsub grid_generation.qsub'],
+                             shell=True, stdout=subprocess.PIPE).communicate()[0]
+                print running
+
+    except:
+        raise IOError('Grid Generation Failed!')
+
+
+    autodock_run_list = []
+    for ligand in ligand_list:
+        # Generate Docking Parameter Files:
+        dpf_file = generate_dpf(ligand, receptor)
+
+        # Generate AutoDock paths:
+        autodock_run = '%s -p %s -l %s\n' % (
+            autodock_path, ligand[:-5] + 'dpf', ligand[:-5] + 'dlg'
+            )
+        autodock_run_list.append(autodock_run)
+
+        if qsub == True:
+            # Generate qsub script:
+            print 'Creating', ligand[:-5] + 'qsub'
+            qsub_content = qsub_template + [autodock_run]
             qsub_file = open(ligand[:-5] + 'qsub', 'w')
             qsub_file.writelines(qsub_content)
             qsub_file.close()
 
             # Run qsub scripts:
-            if running == True:
-                run_qsub = subprocess.Popen(['qsub', ligand[:-5] + 'qsub'],
-                                  stdout=subprocess.PIPE).communicate()[0]
-                print run_qsub
+            if run_qsub == True:
+                running = subprocess.Popen(['qsub %s.qsub' % ligand[:-5]],
+                             shell=True, stdout=subprocess.PIPE).communicate()[0]
+                print running
+        print
 
-        else:
-            # Generate shell script:
-            print "Creating", ligand[:-5] + 'sh'
-            sh_content = [autogrid, autodock]
-            sh_file = open(ligand[:-5] + 'sh', 'w')
-            sh_file.writelines(sh_content)
-            sh_file.close()
-
-            # Run sh scripts:
-            if running == True:
-                run_sh = subprocess.Popen(['sh', ligand[:-5] + 'sh'],
-                                  stdout=subprocess.PIPE).communicate()[0]
-                print run_sh
-
+    if qsub == False:
+        # Generate shell script:
+        print
+        print 'Creating run_autodock.sh'
+        run_list = [autogrid_run] + autodock_run_list
+        autodock_run_list.append(run_list)
+        sh_file = open('run_autodock.sh', 'w')  # This file can run by itself.
+        sh_file.writelines(run_list)
+        sh_file.close()
         print  # Seperate every operation.
 
     print "Finished!"
