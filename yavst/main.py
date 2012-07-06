@@ -75,6 +75,9 @@ def main():
     subprocess.Popen(['mkdir', 'workspace'],
                      stdout=subprocess.PIPE).communicate()[0]
 
+    # Copy qsubber into workspace:
+    subprocess.Popen(['cp -r qsubber.py workspace/'], shell=True)
+
     # Copy ligands and receptor into workspace
     subprocess.Popen(['cp -r %s/* workspace/' % ligands_path], shell=True)
     subprocess.Popen(['cp -r %s workspace/' % receptor], shell=True)
@@ -99,7 +102,7 @@ def main():
         subprocess.Popen(
             ['python', '../prepare_gpf4.py',
              '-r', receptor_name,
-             '-p', 'npts=60,60,60',
+             '-p', 'npts=70,70,70',
              '-d', '.', ],
             stdout=subprocess.PIPE).communicate()[0]
 
@@ -113,7 +116,7 @@ def main():
             # Generate qsub script:
             print 'Creating grid_generation.qsub'
             qsub_content = qsub_template + [autogrid_run]
-            qsub_file = open('grid_generation.qsub', 'w')
+            qsub_file = open('grid_generation', 'w')
             qsub_file.writelines(qsub_content)
             qsub_file.close()
 
