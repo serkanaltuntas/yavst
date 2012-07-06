@@ -5,3 +5,9 @@ ligands = ligand_folder
 [gridbox]
 center = x y z
 box = x y z
+
+[run]
+autogrid = /opt/progs/Autodock4/i86Linux2/autogrid4
+autodock = /opt/progs/Autodock4/i86Linux2/autodock4
+qsub = True
+running = True

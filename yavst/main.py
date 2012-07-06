@@ -55,6 +55,25 @@ def main():
     center = parser.get('gridbox', 'center')
     box = parser.get('gridbox', 'box')
 
+    autogrid_path = parser.get('run', 'autogrid')
+    autodock_path = parser.get('run', 'autodock')
+
+    qsub = parser.get('run', 'qsub')
+    if qsub == 'True':
+        qsub = True
+    elif qsub == 'False':
+        qsub = False
+    else:
+        raise IOError('Wrong qsub option! (True/False)')
+        
+    running = parser.get('run', 'running')
+    if running == 'True':
+        running = True
+    elif running == 'False':
+        running = False
+    else:
+        raise IOError('Wrong running option! (True/False)')
+
     # Ligand path should include a slash at the end:
     if ligands[-1] == '/':
         ligands_path = ligands
@@ -83,6 +102,13 @@ def main():
     gpf_list = []  # holds all gpf files in workspace
     dpf_list = []  # holds all dpf files in workspace
     qsub_list = []  # holds all qsub scripts in workspace
+
+    # If required read qsub template just ones:
+    if qsub == True:
+        qsub_template_file = open('../qsub_script_template', 'r')
+        qsub_template = qsub_template_file.readlines()
+        qsub_template_file.close()
+
     for ligand in ligand_list:
         # Generate Grid Parameter Files for every ligand
         gpf_file = generate_gpf(ligand, receptor)
@@ -92,8 +118,45 @@ def main():
         dpf_file = generate_dpf(ligand, receptor)
         dpf_list.append(dpf_file)
 
-        # Generate qsub scripts:
-    # Run qsub scripts:
+        # Generate running paths:
+        autogrid = '%s -p %s -l %s\n' % (
+            autogrid_path, ligand[:-5] + 'gpf', ligand[:-5] + 'glg'
+            )
+        autodock = '%s -p %s -l %s\n' % (
+            autodock_path, ligand[:-5] + 'dpf', ligand[:-5] + 'dlg'
+            )
+
+
+        if qsub == True:
+            # Generate qsub script:
+            print "Creating", ligand[:-5] + 'qsub'
+            qsub_content = qsub_template + [autogrid, autodock]
+            qsub_file = open(ligand[:-5] + 'qsub', 'w')
+            qsub_file.writelines(qsub_content)
+            qsub_file.close()
+
+            # Run qsub scripts:
+            if running == True:
+                run_qsub = subprocess.Popen(['qsub', ligand[:-5] + 'qsub'],
+                                  stdout=subprocess.PIPE).communicate()[0]
+                print run_qsub
+
+        else:
+            # Generate shell script:
+            print "Creating", ligand[:-5] + 'sh'
+            sh_content = [autogrid, autodock]
+            sh_file = open(ligand[:-5] + 'sh', 'w')
+            sh_file.writelines(sh_content)
+            sh_file.close()
+
+            # Run sh scripts:
+            if running == True:
+                run_sh = subprocess.Popen(['sh', ligand[:-5] + 'sh'],
+                                  stdout=subprocess.PIPE).communicate()[0]
+                print run_sh
+
+        print  # Seperate every operation.
+
     print "Finished!"
 
 

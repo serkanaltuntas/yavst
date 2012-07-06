@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# The name of the job ...
+#$ -N AUTODOCK
+
+# Queue name (long/normal/short)
+#$ -q normal
+
+# Execute from the current working directory 
+#$ -cwd
+
+
+##----------------------------------------------------------------------
+##        Important environment variables
+##  SGE puts lots of info into a job environment, the stuff 
+##  we care about will be:
+##
+#   $NSLOTS               -- how many CPUs we got
+##   $NHOSTS               -- how many machines 
+##   $PE_HOSTFILE          -- original Grid Engine hostfile
+##   $TMPDIR/namd-machines -- hostfile customized for charmrun
+##----------------------------------------------------------------------
+
+
+echo "**************************************************"
+echo "**************************************************"
+echo "***"
+echo "*** Qeueu Job ID    : " $JOB_ID
+echo "*** Number of cores : " $NSLOTS
+echo "*** Number of nodes : " $NHOSTS
+echo "***"
+echo "**************************************************"
+echo "**************************************************"
+echo ""
+
