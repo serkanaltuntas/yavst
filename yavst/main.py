@@ -8,16 +8,16 @@ import subprocess
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
-def generate_dpf(ligand, receptor):
+def generate_dpf(ligand, receptor, ga_num_evals, ga_pop_size, ga_run):
     try:
         print 'Creating', ligand[:-5] + 'dpf'
         subprocess.Popen(
             ['python', '../prepare_dpf4.py',
              '-l', ligand,
              '-r', receptor.split('/')[-1],
-             '-p', 'ga_num_evals=20000000',
-             '-p', 'ga_pop_size=150',
-             '-p', 'ga_run=10',
+             '-p', 'ga_num_evals=%s' % ga_num_evals,
+             '-p', 'ga_pop_size=%s' % ga_pop_size,
+             '-p', 'ga_run=%s' % ga_run,
              '-o', ligand[:-5] + 'dpf', ],
             stdout=subprocess.PIPE).communicate()[0]
         return True
@@ -38,7 +38,16 @@ def main():
     receptor = parser.get('molecules', 'receptor')
     ligands = parser.get('molecules', 'ligands')
     center = parser.get('gridbox', 'center')
+
+    center = parser.get('gridbox', 'center')
+    center_x, center_y, center_z = center.split('|')
+
     box = parser.get('gridbox', 'box')
+    box_x, box_y, box_z = box.split('|')
+
+    ga_num_evals = parser.get('ga', 'ga_num_evals')
+    ga_pop_size = parser.get('ga', 'ga_pop_size')
+    ga_run = parser.get('ga', 'ga_run')
 
     autogrid_path = parser.get('run', 'autogrid')
     autodock_path = parser.get('run', 'autodock')
@@ -50,7 +59,7 @@ def main():
         qsub = False
     else:
         raise IOError('Wrong qsub option! (True/False)')
-        
+
     run_qsub = parser.get('run', 'run_qsub')
     if run_qsub == 'True':
         run_qsub = True
@@ -102,7 +111,8 @@ def main():
         subprocess.Popen(
             ['python', '../prepare_gpf4.py',
              '-r', receptor_name,
-             '-p', 'npts=70,70,70',
+             '-p', 'npts=%s,%s,%s' % (box_x, box_y, box_z),
+             '-p', 'gridcenter=%s,%s,%s' % (center_x, center_y, center_z),
              '-d', '.', ],
             stdout=subprocess.PIPE).communicate()[0]
 
@@ -123,17 +133,17 @@ def main():
             # Run qsub scripts:
             if run_qsub == True:
                 running = subprocess.Popen(['qsub grid_generation.qsub'],
-                             shell=True, stdout=subprocess.PIPE).communicate()[0]
+                    shell=True, stdout=subprocess.PIPE).communicate()[0]
                 print running
 
     except:
         raise IOError('Grid Generation Failed!')
 
-
     autodock_run_list = []
     for ligand in ligand_list:
         # Generate Docking Parameter Files:
-        dpf_file = generate_dpf(ligand, receptor)
+        dpf_file = generate_dpf(ligand, receptor,
+                                ga_num_evals, ga_pop_size, ga_run)
 
         # Generate AutoDock paths:
         autodock_run = '%s -p %s -l %s\n' % (
@@ -152,7 +162,7 @@ def main():
             # Run qsub scripts:
             if run_qsub == True:
                 running = subprocess.Popen(['qsub %s.qsub' % ligand[:-5]],
-                             shell=True, stdout=subprocess.PIPE).communicate()[0]
+                    shell=True, stdout=subprocess.PIPE).communicate()[0]
                 print running
         print
 

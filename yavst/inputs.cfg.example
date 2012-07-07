@@ -3,8 +3,13 @@ receptor = protein_file
 ligands = ligand_folder
 
 [gridbox]
-center = x y z
-box = x y z
+center = x|y|z
+box = x|y|z
+
+[ga]
+ga_num_evals = 5000000
+ga_pop_size = 300
+ga_run = 10
 
 [run]
 autogrid = /opt/progs/Autodock4/i86Linux2/autogrid4
