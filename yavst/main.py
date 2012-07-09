@@ -74,12 +74,6 @@ def main():
     else:
         ligands_path = ligands + '/'
 
-    # Ligand List:
-    ligand_list = subprocess.Popen(
-        ['ls', '-1', ligands_path],
-        stdout=subprocess.PIPE).communicate()[0]
-    ligand_list = ligand_list.split('\n')[:-1]  # Last item is empty!
-
     # Create griding and docking workspace:
     subprocess.Popen(['mkdir', 'workspace'],
                      stdout=subprocess.PIPE).communicate()[0]
@@ -87,15 +81,48 @@ def main():
     # Copy qsubber into workspace:
     subprocess.Popen(['cp -r qsubber.py workspace/'], shell=True)
 
-    # Copy ligands and receptor into workspace
+    # Copy ligands into workspace:
     subprocess.Popen(['cp -r %s/* workspace/' % ligands_path], shell=True)
-    subprocess.Popen(['cp -r %s workspace/' % receptor], shell=True)
-    os.chdir('workspace')
+
+    # Go to working directory:
+    os.chdir('workspace')  # After this line working directory is 'workspace'!
 
     print
     pwd = subprocess.Popen(['pwd'],
         stdout=subprocess.PIPE).communicate()[0]
     print 'Working Directory:', pwd
+
+    # Premature Ligand List:
+    ligand_list = subprocess.Popen(
+        ['ls -1 *.pdb *.mol2 *.pdbq'], shell=True,
+        stdout=subprocess.PIPE).communicate()[0]
+    ligand_list = ligand_list.split('\n')[:-1]  # Last item is empty!
+
+    # Create pqbqt forms of all ligands:
+    for ligand in ligand_list:
+        try:
+            print 'Creating', ligand.split('.')[0] + '.pdbqt'
+
+            subprocess.Popen(
+                ['python', '../prepare_ligand4.py',
+                 '-l', ligand, ],
+                stdout=subprocess.PIPE).communicate()[0]
+        except:
+            raise IOError('Convertion failed!')
+
+    # Remove PDB Ligands:
+    subprocess.Popen(
+        ['rm *.pdb'], shell=True,
+        stdout=subprocess.PIPE).communicate()[0]
+
+    # Mature Ligand List:
+    ligand_list = subprocess.Popen(
+        ['ls -1 *.pdbqt'], shell=True,
+        stdout=subprocess.PIPE).communicate()[0]
+    ligand_list = ligand_list.split('\n')[:-1]  # Last item is empty!
+
+    # Copy receptor into workspace:
+    subprocess.Popen(['cp -r %s .' % receptor], shell=True)
 
     # If required read qsub template just ones:
     if qsub == True:
@@ -103,6 +130,7 @@ def main():
         qsub_template = qsub_template_file.readlines()
         qsub_template_file.close()
 
+    print
     # Create Grid Maps for all ligands ones:
     try:
         print 'Creating Grid Parameter File'
