@@ -150,19 +150,15 @@ def main():
             receptor_name[:-5] + 'glg'
             )
 
+        qsubber_starter = "python qsubber.py"
+
         if qsub == True:
             # Generate qsub script:
-            print 'Creating grid_generation.qsub'
-            qsub_content = qsub_template + [autogrid_run]
-            qsub_file = open('grid_generation', 'w')
+            print 'Creating Qsub Starter Script'
+            qsub_content = qsub_template + [autogrid_run, qsubber_starter]
+            qsub_file = open('start', 'w')
             qsub_file.writelines(qsub_content)
             qsub_file.close()
-
-            # Run qsub scripts:
-            if run_qsub == True:
-                running = subprocess.Popen(['qsub grid_generation.qsub'],
-                    shell=True, stdout=subprocess.PIPE).communicate()[0]
-                print running
 
     except:
         raise IOError('Grid Generation Failed!')
@@ -187,13 +183,15 @@ def main():
             qsub_file.writelines(qsub_content)
             qsub_file.close()
 
-            # Run qsub scripts:
-            if run_qsub == True:
-                running = subprocess.Popen(['qsub %s.qsub' % ligand[:-5]],
-                    shell=True, stdout=subprocess.PIPE).communicate()[0]
-                print running
         print
+ 
+    # Run qsub scripts:
+    if run_qsub == True:
+        running = subprocess.Popen(['qsub start'],
+            shell=True, stdout=subprocess.PIPE).communicate()[0]
+        print running
 
+    # If qsub system is out of use:
     if qsub == False:
         # Generate shell script:
         print
