@@ -1,0 +1,6 @@
+numpy==1.6.2
+AutoDockTools-1.5.4.tar.gz
+MolKit-1.5.4.tar.gz
+mglutil-1.5.4.tar.gz
+PyBabel-1.5.4.tar.gz
+Support-1.5.4.tar.gz
