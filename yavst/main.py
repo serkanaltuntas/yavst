@@ -140,7 +140,7 @@ def main():
             ['python', '../prepare_gpf4.py',
              '-r', receptor_name,
              '-p', 'npts=%s,%s,%s' % (box_x, box_y, box_z),
-             '-p', 'gridcenter=%s,%s,%s' % (center_x, center_y, center_z),
+             '-p', 'gridcenter=%s %s %s' % (center_x, center_y, center_z),
              '-d', '.', ],
             stdout=subprocess.PIPE).communicate()[0]
 
