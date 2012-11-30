@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import sys
 import os
-from ConfigParser import SafeConfigParser
+import glob
 import subprocess
+from ConfigParser import SafeConfigParser
+from distutils.file_util import copy_file
 
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -81,8 +83,13 @@ def main():
     # Copy qsubber into workspace:
     subprocess.Popen(['cp -r qsubber.py workspace/'], shell=True)
 
+    # All ligands to be copied into workspace:
+    copy_ligand_list = glob.glob(os.path.join(ligands_path, '*'))
+
     # Copy ligands into workspace:
-    subprocess.Popen(['cp -r %s/* workspace/' % ligands_path], shell=True)
+    print "Copying", copy_ligand_list.__len__(), "ligand(s)."
+    for src in copy_ligand_list:
+        copy_file(src, 'workspace/')
 
     # Go to working directory:
     os.chdir('workspace')  # After this line working directory is 'workspace'!
@@ -93,10 +100,8 @@ def main():
     print 'Working Directory:', pwd
 
     # Premature Ligand List:
-    ligand_list = subprocess.Popen(
-        ['ls -1 *.pdb *.mol2 *.pdbq'], shell=True,
-        stdout=subprocess.PIPE).communicate()[0]
-    ligand_list = ligand_list.split('\n')[:-1]  # Last item is empty!
+    ligand_list = glob.glob('*.pdb')
+    print "All PDB Ligands: ", ligand_list.__len__()
 
     # Create pqbqt forms of all ligands:
     for ligand in ligand_list:
@@ -116,10 +121,7 @@ def main():
         stdout=subprocess.PIPE).communicate()[0]
 
     # Mature Ligand List:
-    ligand_list = subprocess.Popen(
-        ['ls -1 *.pdbqt'], shell=True,
-        stdout=subprocess.PIPE).communicate()[0]
-    ligand_list = ligand_list.split('\n')[:-1]  # Last item is empty!
+    ligand_list = glob.glob('*.pdbqt')
 
     # Copy receptor into workspace:
     subprocess.Popen(['cp -r %s .' % receptor], shell=True)
